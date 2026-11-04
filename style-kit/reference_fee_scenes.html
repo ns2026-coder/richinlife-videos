@@ -1,0 +1,96 @@
+<!doctype html><html><body style="margin:0;background:#000"><canvas id=c width=1080 height=1920></canvas><script>
+const c=document.getElementById('c'),x=c.getContext('2d');
+const G='#22c55e',Y='#fbbf24',R='#ef4444',W='#f3f6fb',M='#9aa6bf',P='#1b2748',L='#2d3b63';
+const clamp=(v,a=0,b=1)=>Math.min(b,Math.max(a,v));
+const p=(t,a,d=.35)=>clamp((t-a)/d);
+const out=k=>1-Math.pow(1-k,3);
+const back=k=>{const s=1.9;k=k-1;return k*k*((s+1)*k+s)+1};
+const pop=(t,a,d=.32)=>back(p(t,a,d));
+function txt(s,X,Y_,sz,col=W,w=700,al='center'){x.font=`${w} ${sz}px Poppins`;x.textAlign=al;x.textBaseline='middle';x.fillStyle=col;x.fillText(s,X,Y_)}
+function rr(X,Y_,w,h,r,f,st){x.beginPath();x.roundRect(X,Y_,w,h,r);if(f){x.fillStyle=f;x.fill()}if(st){x.strokeStyle=st;x.lineWidth=4;x.stroke()}}
+function sc(X,Y_,s,fn){x.save();x.translate(X,Y_);x.scale(s,s);x.translate(-X,-Y_);fn();x.restore()}
+function fade(a,fn){x.save();x.globalAlpha*=clamp(a);fn();x.restore()}
+const gbp=n=>'£'+Math.round(n).toLocaleString('en-GB');
+const round100=n=>Math.round(n/100)*100;
+// Finger: a simple pointer that presses on tap
+function finger(X,Y_,press=0){x.save();x.translate(X,Y_);const s=1-.14*press;x.scale(s,s);x.rotate(-.2);
+ if(press>0){x.beginPath();x.arc(-4,-6,40+70*press,0,7);x.strokeStyle=`rgba(255,255,255,${.6*(1-press)})`;x.lineWidth=6;x.stroke()}
+ x.fillStyle='#f6d9bf';x.strokeStyle='#0a1228';x.lineWidth=5;
+ x.beginPath();x.roundRect(-20,-14,40,120,20);x.fill();x.stroke();
+ x.beginPath();x.roundRect(-34,62,68,120,30);x.fill();x.stroke();x.restore()}
+function tapAt(t,a){return (t>a&&t<a+.45)?Math.sin((t-a)/.45*Math.PI):0}
+function coin(X,Y_,r,col=Y,rot=0){x.save();x.translate(X,Y_);x.scale(Math.abs(Math.cos(rot))*.8+.2,1);x.beginPath();x.arc(0,0,r,0,7);x.fillStyle=col;x.fill();x.strokeStyle='rgba(0,0,0,.25)';x.lineWidth=4;x.stroke();txt('£',0,2,r*1.2,'#3c2a05',800);x.restore()}
+function rnd(i){const v=Math.sin(i*127.1+11.7)*43758.5453;return v-Math.floor(v)}
+// ---- background
+function bg(t,heat){const g=x.createLinearGradient(0,0,0,1920);g.addColorStop(0,'#0e1a3a');g.addColorStop(1,'#060b1a');x.fillStyle=g;x.fillRect(0,0,1080,1920);
+ x.strokeStyle='rgba(255,255,255,.035)';x.lineWidth=2;const o=(t*18)%120;for(let i=-1;i<11;i++){x.beginPath();x.moveTo(i*120+o,0);x.lineTo(i*120+o,1920);x.stroke()}for(let i=-1;i<18;i++){x.beginPath();x.moveTo(0,i*120+o);x.lineTo(1080,i*120+o);x.stroke()}
+ const bx=540+260*Math.sin(t*.45),by=620+160*Math.cos(t*.33);const b=x.createRadialGradient(bx,by,0,bx,by,720);const rgb=heat>0?`${Math.round(34+205*heat)},${Math.round(197-129*heat)},${Math.round(94-26*heat)}`:'34,197,94';b.addColorStop(0,`rgba(${rgb},.22)`);b.addColorStop(1,`rgba(${rgb},0)`);x.fillStyle=b;x.fillRect(0,0,1080,1920)}
+// ---- captions (timed by sentence, word positions estimated)
+const SENT=[[0,2.12,'A 1% FEE SOUNDS TINY'],[2.55,5.79,'OVER THIRTY YEARS IT MIGHT COST YOU THOUSANDS OF POUNDS'],[6.21,10.67,'IMAGINE INVESTING £10,000 ONCE AND LEAVING IT ALONE FOR THIRTY YEARS'],[11.09,14.99,'ASSUME IT GROWS 6% A YEAR AFTER FEES COMPOUNDING ONCE A YEAR'],[15.47,19.52,'AFTER THIRTY YEARS THAT IS ABOUT £57,400'],[19.9,22.7,'NOW ADD AN EXTRA 1% YEARLY FEE SO IT GROWS 5% INSTEAD'],[22.7,24.07,'YOU END UP WITH ABOUT £43,200'],[24.52,27.6,'THAT SMALL DIFFERENCE COSTS YOU OVER £14,000'],[27.97,31.29,'AND THAT IS BECAUSE FEES COMPOUND TOO JUST LIKE YOUR GROWTH DOES'],[31.57,34.99,'SO IT IS WORTH CHECKING THE TOTAL YEARLY CHARGES'],[35.33,37.9,'INCLUDING PLATFORM AND FUND FEES'],[37.9,39.71,'THESE CAN BE EASY TO MISS'],[39.98,41.3,'LOWER COST DOES NOT MEAN LOWER RISK'],[41.68,43.94,'FEES ARE JUST ONE PART OF THE PICTURE'],[44.28,45.9,'AND INVESTMENTS CAN ALWAYS FALL'],[46,49.9,'DO YOU KNOW WHAT FEES YOU PAY ON YOUR SAVINGS OR INVESTMENTS'],[50,52.39,'TELL ME IN THE COMMENTS'],[52.68,57.0,'WANT A BETTER LIFE FOLLOW AND SUBSCRIBE'],[57.49,60.34,'KEEP LEARNING STAY SMARTER AND ACT ACCORDINGLY'],[60.73,62.9,'SEE YOU IN THE NEXT ONE']];
+function caption(t){const s=SENT.find(a=>t>=a[0]&&t<a[1]);if(!s)return;const w=s[2].split(' ');const f=(t-s[0])/(s[1]-s[0]);const tot=w.join('').length;let acc=0,i=0;for(;i<w.length;i++){acc+=w[i].length;if(acc/tot>=f)break}i=Math.min(i,w.length-1);const st=Math.floor(i/3)*3;const ch=w.slice(st,st+3);
+ x.font='800 58px Poppins';x.textBaseline='middle';x.textAlign='left';const sp=x.measureText(' ').width;const tw=ch.reduce((a,b)=>a+x.measureText(b).width,0)+sp*(ch.length-1);let X=540-tw/2;const yy=1395;
+ ch.forEach((q,k)=>{const on=st+k===i;x.lineWidth=12;x.lineJoin='round';x.strokeStyle='rgba(0,0,0,.75)';x.strokeText(q,X,yy);x.fillStyle=on?Y:W;x.fillText(q,X,yy);X+=x.measureText(q).width+sp})}
+function chrome(t,total){txt('RICH IN LIFE',540,90,28,M,700);rr(90,122,900,8,4,'rgba(255,255,255,.12)');rr(90,122,900*clamp(t/total),8,4,G);
+ if(t<52.6){x.textAlign='center';txt('Illustrative only. Returns not guaranteed.',540,1500,26,M,500);txt('Investments can fall. Not financial advice.',540,1538,26,M,500)}}
+// ---- scenes
+function s1(t){ // 1% slams then shrinks to tiny
+ const k=pop(t,.05,.3),sh=t<.45?Math.sin(t*70)*(0.45-t)*30:0;const shr=out(p(t,1.0,.55));const size=460*(1-.78*shr)*k;
+ txt('1%',540+sh,640,size,R,800);fade(p(t,.25,.25),()=>txt('fee',540,640+size*.52+26,110-40*shr,W,700));
+ fade(p(t,1.2,.3),()=>{x.setLineDash([12,14]);x.strokeStyle=M;x.lineWidth=4;x.beginPath();x.arc(540,650,190,0,7);x.stroke();x.setLineDash([]);txt('sounds tiny...',540,920,64,M,600)})}
+function s2(t){ // 30-year counter draining coins
+ const a=t-2.3;const k=out(p(a,0,2.0));const yr=Math.round(30*k);x.lineWidth=30;x.lineCap='round';x.strokeStyle=L;x.beginPath();x.arc(540,560,230,0,7);x.stroke();x.strokeStyle=Y;x.beginPath();x.arc(540,560,230,-Math.PI/2,-Math.PI/2+2*Math.PI*k);x.stroke();x.lineCap='butt';
+ txt(yr,540,535,190,W,800);txt('YEARS',540,660,52,Y,700);
+ for(let i=0;i<14;i++){const st=1.1+i*.17;if(a<st)continue;const q=a-st,cx=120+840*rnd(i),cy=-60+q*q*760+820;if(cy<1330)fade(1,()=>coin(cx,cy,36,Y,q*7+i))}
+ fade(p(a,1.2,.3),()=>{sc(540,960,pop(a,1.2),()=>txt('−£ thousands',540,960,92,R,800))})}
+function notes(X,base,n,t0,t){for(let i=0;i<n;i++){const k=out(p(t,t0+i*.09,.26));const yy=base-i*22-(1-k)*500;fade(k,()=>{rr(X-210,yy,420,70,10,i%2?'#16a34a':'#22c55e','#0b5f2c');x.beginPath();x.arc(X,yy+35,20,0,7);x.fillStyle='rgba(255,255,255,.3)';x.fill()})}}
+function s3(t){const a=t-6.0;txt('£10,000',540,330,150,G,800);notes(540,1000,18,a<0?0:.15,a);
+ fade(p(a,2.3,.3),()=>{const k=pop(a,2.3);sc(540,500,k,()=>{rr(190,420,700,110,55,P,L);txt('Invest once. Leave it alone.',540,478,44,W,600)})});
+ const lk=pop(a,2.9);if(a>2.9){sc(540,700,lk,()=>{rr(470,620,140,120,18,Y);x.strokeStyle=Y;x.lineWidth=20;x.beginPath();x.arc(540,620,48,Math.PI,0);x.stroke();x.fillStyle='#3c2a05';x.beginPath();x.arc(540,675,18,0,7);x.fill()})}}
+const CX=130,CW=820,CY=1040,CH=620,YMAX=60000;
+const v=(r,y)=>10000*Math.pow(1+r,y);const px=y=>CX+CW*y/30,py=m=>CY-CH*(m-0)/YMAX;
+function axes(){x.strokeStyle=L;x.lineWidth=4;x.beginPath();x.moveTo(CX,CY-CH);x.lineTo(CX,CY);x.lineTo(CX+CW,CY);x.stroke();for(const y of [0,10,20,30])txt(y===0?'Today':y+' yrs',px(y),CY+38,28,M,500);}
+function line(r,col,yr,w=10){x.strokeStyle=col;x.lineWidth=w;x.lineJoin='round';x.beginPath();for(let y=0;y<=yr+1e-6;y+=.25){const X=px(y),Y2=py(v(r,y));y?x.lineTo(X,Y2):x.moveTo(X,Y2)}x.lineTo(px(yr),py(v(r,yr)));x.stroke();x.beginPath();x.arc(px(yr),py(v(r,yr)),16,0,7);x.fillStyle=col;x.fill()}
+function chart(t){axes();const g=t<15.5?0:out(clamp((t-15.5)/3.2))*30;
+ // intro chip + annual steps before the race
+ if(t<15.5){sc(540,560,pop(t,11.1),()=>{rr(340,300,400,110,55,G);txt('6% a year',540,358,56,'#06210f',800)});
+  for(let i=0;i<6;i++){const k=out(p(t,12.9+i*.28,.3));const h=v(.06,i*6)/60000*CH*k;rr(px(i*6)-30,CY-h,60,h,8,`rgba(34,197,94,${.35+i*.1})`);if(k>0)txt('+6%',px(i*6),CY-h-26,28,G,700)}}
+ else {line(.06,G,g);const val=v(.06,g);txt(gbp(round100(val)),540,240,110,G,800);txt('Year '+Math.round(g),540,330,44,M,600)}}
+function fee(t){ // slider + red race
+ axes();line(.06,G,30);const a=t-19.9;
+ const dx=out(p(a,.5,1.0));rr(160,190,760,130,26,P,L);txt('Yearly fee',210,222,32,M,500,'left');txt((dx).toFixed(1)+'%',860,255,54,dx>.05?R:W,800,'right');
+ rr(210,272,500,14,7,L);rr(210,272,500*dx,14,7,R);x.beginPath();x.arc(210+500*dx,279,24,0,7);x.fillStyle=W;x.fill();if(a<1.55)finger(210+500*dx+6,296,a<.5?tapAt(a,0.05):.25);
+ const g=out(clamp((t-21.2)/2.6))*30;if(g>0){line(.05,R,g);txt(gbp(round100(v(.05,g))),Math.min(px(g)-60,CX+CW-190),py(v(.05,g))+85,46,R,800,'left')}
+ fade(p(a,1.6,.3),()=>txt('£57,400',px(30)-40,py(v(.06,30))-14,46,G,800,'right'))}
+function gap(t){const a=t-24.3;if(t<28){axes();line(.06,G,30);line(.05,R,30);
+ const X=px(30)+0,y1=py(v(.06,30)),y2=py(v(.05,30));const k=out(p(a,.1,.5));x.fillStyle='rgba(239,68,68,.24)';x.beginPath();for(let y=30;y>=30-30*k;y-=.5){x.lineTo(px(y),py(v(.06,y)))}for(let y=30-30*k;y<=30;y+=.5){x.lineTo(px(y),py(v(.05,y)))}x.fill();
+ const n=out(p(a,.5,1.6))*14216;sc(540,260,1+.05*Math.sin(a*6),()=>{txt('The extra fee costs',540,190,48,W,600);txt(a<2.2?gbp(n):'over £14,000',540,290,a<2.2?120:104,R,800)});
+ for(let i=0;i<9;i++){const q=(a-.8-i*.26);if(q<0||q>1)continue;const K=out(q);coin(px(27)-K*30,y1+(y2-y1+200)*K,26,Y,q*8)}
+ return}
+ // compounding: each year's fee stacks on itself
+ const b=t-27.9;txt('Fees compound too',540,250,76,R,800);const pos=(i)=>210+i*165;for(let i=0;i<5;i++){const k=out(p(b,.25+i*.42,.32));const yr=[1,5,10,20,30][i],gp=v(.06,yr)-v(.05,yr),h=Math.max(8,gp/14216*600)*k;rr(pos(i)-52,1020-h,104,h,10,R);fade(k,()=>{txt('Yr '+yr,pos(i),1060,30,M,600);txt('£'+Math.round(gp/100)*100>='£'?gbp(Math.round(gp/100)*100):'',pos(i),1020-h-30,30,W,700)})}
+ fade(p(b,2.1,.3),()=>txt('Growth snowballs. So do charges.',540,1180,44,W,600))}
+function statement(t){const a=t-31.4;const up=out(p(a,0,.35));x.save();x.translate(0,(1-up)*1000);rr(120,210,840,920,26,'#f3f6fb');txt('Your yearly charges',540,290,50,'#0a1228',800);
+ const rows=[['Platform fee',35.1],['Fund fee',36.4],['Other costs',37.3]];rows.forEach((r,i)=>{const yy=410+i*135;const on=t>=r[1];rr(170,yy,740,104,16,on?'#dcfce7':'#e6eaf3');txt(r[0],210,yy+52,44,'#0a1228',600,'left');x.beginPath();x.arc(850,yy+52,30,0,7);x.fillStyle=on?G:'#c4ccdb';x.fill();if(on){x.strokeStyle='#fff';x.lineWidth=8;x.beginPath();x.moveTo(835,yy+52);x.lineTo(847,yy+66);x.lineTo(868,yy+38);x.stroke()}});
+ txt('Total yearly charges: check yours',540,860,38,'#0a1228',700);
+ for(let i=0;i<3;i++)rr(210,930+i*26,i==2?420:660,10,5,'#c4ccdb');
+ x.restore();
+ const tgt=t<35.1?[860,300]:t<36.4?[850,520]:t<37.3?[850,650]:[850,790];const pr=[35.1,36.4,37.3].map(q=>tapAt(t,q-.1)).reduce((u,w)=>Math.max(u,w),0);if(t<37.9&&a>1)finger(tgt[0],tgt[1]-20,pr);
+ if(t>=37.9){const m=out(p(t,37.9,.45));const cx=420,cy=955;x.save();x.beginPath();x.arc(cx,cy,180*m,0,7);x.fillStyle='#fff7d6';x.fill();x.strokeStyle='#0a1228';x.lineWidth=16;x.stroke();x.clip();txt('small print',cx,cy,60,'#0a1228',700);x.restore();x.strokeStyle='#0a1228';x.lineWidth=26;x.lineCap='round';x.beginPath();x.moveTo(cx+130*m,cy+130*m);x.lineTo(cx+230*m,cy+230*m);x.stroke();x.lineCap='butt';}}
+function picture(t){if(t<41.5){const a=t-39.9;txt('Lower cost',540,420,92,G,800);sc(540,600,pop(a,.3),()=>{txt('≠',540,600,150,Y,800)});sc(540,790,pop(a,.6),()=>txt('Lower risk',540,790,92,R,800));return}
+ if(t<44.2){const a=t-41.5;txt('Fees are just one part',540,300,62,W,700);const tile=['Fees','Risk','Time','Goals'];tile.forEach((q,i)=>{const X=240+(i%2)*320,Y2=420+Math.floor(i/2)*320;const k=pop(a,.1+i*.22);sc(X+150,Y2+140,k,()=>{rr(X,Y2,300,280,24,i==0?Y:P,i==0?null:L);txt(q,X+150,Y2+140,62,i==0?'#3c2a05':M,800)})});return}
+ const a=t-44.2;axes();const pts=[.1,.25,.2,.42,.38,.6,.72,.4,.34,.3];const k=clamp(a/1.4)*(pts.length-1);x.strokeStyle=R;x.lineWidth=10;x.beginPath();for(let i=0;i<=Math.floor(k);i++){const X=CX+CW*i/(pts.length-1),Y2=CY-CH*pts[i];i?x.lineTo(X,Y2):x.moveTo(X,Y2)}x.stroke();txt('Investments can fall',540,290,70,R,800)}
+function poll(t){const a=t-46;rr(120,240,840,780,30,P,L);txt('Quick check',540,320,38,M,600);txt('Do you know',540,410,72,W,800);txt('your fees?',540,495,72,Y,800);
+ const op=['Yes, exactly','Roughly','No idea'];const sel=a>2.6?2:-1;op.forEach((q,i)=>{const k=pop(a,.5+i*.28);sc(540,640+i*125,k,()=>{rr(190,590+i*125,700,102,51,sel===i?G:'#0a1228',sel===i?null:L);txt(q,540,642+i*125,44,sel===i?'#06210f':W,700)})});
+ if(a<3.1&&a>1.6){const mv=out(p(a,1.6,.8));finger(800-120*mv,860+40*mv,tapAt(a,2.5))}
+ if(a>3.9){const b=a-3.9;sc(540,1160,pop(b,0),()=>{rr(170,1090,740,130,30,'#fff');txt('Comment below',540,1155,52,'#0a1228',800)});const bo=Math.sin(b*7)*16;x.fillStyle=Y;x.beginPath();x.moveTo(920,1120+bo);x.lineTo(980,1120+bo);x.lineTo(950,1185+bo);x.fill()}}
+function endcard(t){const a=t-52.6;txt('RICH',540,430,210,G,800);txt('in life',540,570,104,W,700);
+ const tap=9.4-5.1;const on=a>3.2;sc(540,735,(on?1:1+.03*Math.sin(a*5))*pop(a,.2),()=>{rr(290,670,500,130,65,on?P:G,on?G:null);txt(on?'Following ✓':'FOLLOW',540,737,62,on?G:'#06210f',800)});
+ if(a>1.6&&a<3.9){const mv=out(p(a,1.6,1.1));finger(860-200*mv,1020-210*mv,tapAt(a,3.0))}
+ fade(p(a,3.8,.4),()=>txt('Lessons every day',540,870,48,M,500));
+ fade(p(t,57.5,.3),()=>txt('Keep learning.',540,960,60,Y,800));fade(p(t,58.3,.3),()=>txt('Stay smarter.',540,1035,60,Y,800));fade(p(t,59.1,.3),()=>txt('Act accordingly.',540,1110,60,Y,800));fade(p(t,60.7,.3),()=>txt('See you in the next one',540,1195,50,W,600))}
+// ---- routing
+window.draw=t=>{let h=0;if(t<2.3)h=.5*(1-p(t,1,.8));else if(t>19.9&&t<31.4)h=.75;else if(t>44&&t<46)h=.7;bg(t,h);
+ const f=t<2.3?s1:t<6?s2:t<11?s3:t<19.9?chart:t<24.3?fee:t<31.4?gap:t<39.9?statement:t<46?picture:t<52.6?poll:endcard;
+ // quick cross-fade in at each scene start
+ const starts=[0,2.3,6,11,19.9,24.3,28,31.4,39.9,41.5,44.2,46,52.6];const sst=starts.filter(q=>q<=t).pop();const q=clamp((t-sst)/.15);fade(q,()=>f(t));chrome(t,63);caption(t)};
+</script></body></html>
