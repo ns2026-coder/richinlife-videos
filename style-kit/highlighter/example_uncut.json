@@ -1,0 +1,9 @@
+{"scenes": [
+  {"type": "paper", "lines": ["Fuck your mood.", "Stick to the budget."], "seconds": 3.6},
+  {"type": "punch", "text": "STOP\nPISSING IT\nAWAY.", "seconds": 1.6},
+  {"type": "paper", "lines": ["Payday hits.", "Save first.", "Spend what's left."], "seconds": 3.4, "per_word": 0.38},
+  {"type": "toggles", "off": "Spending", "on": "Saving", "seconds": 2.3},
+  {"type": "paper", "lines": ["Nobody is coming", "to save your arse.", "Save it yourself."], "seconds": 3.6, "per_word": 0.3, "size": 72},
+  {"type": "clock", "text": "If not now, when?", "seconds": 2.2},
+  {"type": "outro", "seconds": 2.6}
+]}
