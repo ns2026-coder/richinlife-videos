@@ -1,0 +1,9 @@
+{"scenes": [
+  {"type": "paper", "lines": ["Forget your mood.", "Stick to the budget."], "seconds": 3.6},
+  {"type": "punch", "text": "PAY\nYOURSELF\nFIRST.", "seconds": 1.6},
+  {"type": "paper", "lines": ["Payday hits.", "Save first.", "Spend what's left."], "seconds": 3.4, "per_word": 0.38},
+  {"type": "toggles", "off": "Spending", "on": "Saving", "seconds": 2.3},
+  {"type": "paper", "lines": ["Rich isn't what you earn.", "It's what you keep."], "seconds": 3.6, "per_word": 0.3, "size": 72},
+  {"type": "clock", "text": "If not now, when?", "seconds": 2.2},
+  {"type": "outro", "seconds": 2.6}
+]}
