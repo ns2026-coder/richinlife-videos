@@ -28,13 +28,13 @@ def paper(seed):
     return np.clip(rgb * vignette(0.85, 0.12), 0, 1)
 
 PAPERS = [paper(s) for s in range(3)]
-GRAINS = [rng.normal(0, 0.025, (H, W, 1)).astype(np.float32) for _ in range(4)]
+GRAINS = [rng.normal(0, 0.015, (H, W, 1)).astype(np.float32) for _ in range(4)]
 
 def bg_paper(i):
-    return Image.fromarray((np.clip(PAPERS[(i // 3) % 3], 0, 1) * 255).astype(np.uint8))
+    return Image.fromarray((np.clip(PAPERS[(i // 6) % 3], 0, 1) * 255).astype(np.uint8))
 
 def add_grain(img, i):
-    a = np.asarray(img, np.float32) / 255 + GRAINS[i % 4]
+    a = np.asarray(img, np.float32) / 255 + GRAINS[(i // 6) % 4]
     return Image.fromarray((np.clip(a, 0, 1) * 255).astype(np.uint8))
 
 def ease(t):
@@ -192,7 +192,7 @@ def render(idx):
     tmp = os.path.join(OUT, f"tmp_s{idx}.mp4")
     final = os.path.join(OUT, f"s{idx}.mp4")
     p = subprocess.Popen(["ffmpeg", "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-",
-                          "-c:v", "libx264", "-crf", "19", "-preset", "veryfast", "-pix_fmt", "yuv420p", tmp], stdin=subprocess.PIPE)
+                          "-c:v", "libx264", "-crf", "24", "-preset", "veryfast", "-pix_fmt", "yuv420p", tmp], stdin=subprocess.PIPE)
     for i in range(n):
         img = draw(i, i / FPS).convert("RGB")
         img = add_grain(img, i)
@@ -207,7 +207,7 @@ def still(idx, t, name):
     add_grain(draw(int(t * FPS), t).convert("RGB"), 0).save(os.path.join(OUT, name), quality=90)
 
 if __name__ == "__main__":
-    # usage: python3 make.py script.json out_dir   (writes out_dir/final.mp4, silent; add music after)
+    # usage: python3 make.py script.json out_dir   (writes out_dir/final.mp4 silent and out_dir/final_music.mp4 with the music bed)
     SCENES[:] = load_scenes(sys.argv[1])
     OUT = sys.argv[2]
     os.makedirs(OUT, exist_ok=True)
@@ -216,4 +216,8 @@ if __name__ == "__main__":
     with open(os.path.join(OUT, "list.txt"), "w") as fh:
         fh.writelines(f"file 's{i}.mp4'\n" for i in range(len(SCENES)))
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", os.path.join(OUT, "list.txt"), "-c", "copy", os.path.join(OUT, "final.mp4")], check=True)
-    print(os.path.join(OUT, "final.mp4"))
+    music = os.path.join(os.path.dirname(os.path.abspath(__file__)), "highlighter_bed.mp3")
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", os.path.join(OUT, "final.mp4"), "-stream_loop", "-1", "-i", music,
+                    "-map", "0:v", "-map", "1:a", "-c:v", "copy", "-c:a", "aac", "-b:a", "160k", "-shortest",
+                    os.path.join(OUT, "final_music.mp4")], check=True)
+    print(os.path.join(OUT, "final_music.mp4"))
