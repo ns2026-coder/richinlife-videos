@@ -2,7 +2,7 @@
 
 Short text-only videos: grainy paper with dark edges, serif text that appears word by word while a yellow marker wipes behind it, quick cuts to one bold idea at a time (a punch card on white, a Spending/Saving toggle, a ticking clock), then a "Lessons every day / RICH IN LIFE" outro. 1080x1920, 30 fps, under 20 seconds.
 
-No voiceover, so it costs no ElevenLabs credits. Music only: add a royalty-free track after rendering (TikTok sounds can't be added through Metricool).
+No voiceover, so it costs no ElevenLabs credits. Music: `highlighter_bed.mp3` is an original track made in code for this channel (no licence issues), added automatically. TikTok sounds can't be added through Metricool.
 
 ## Schedule
 - Posts in the 18:00 slot, one a day, uncut version (swearing allowed).
@@ -15,9 +15,15 @@ No voiceover, so it costs no ElevenLabs credits. Music only: add a royalty-free 
 
 ## Make one
 1. Copy `example_uncut.json` and write new lines. Scene types: `paper` (lines), `punch` (bold text, use \n), `toggles` (off/on labels), `clock` (question), `outro`.
-2. `python3 make.py my_script.json out_dir` → `out_dir/final.mp4` (silent). Needs Python 3, Pillow, numpy and ffmpeg.
-3. Add music: `ffmpeg -i out_dir/final.mp4 -i track.mp3 -map 0:v -map 1:a -c:v copy -shortest final_music.mp4`.
+2. `python3 make.py my_script.json out_dir` → `out_dir/final_music.mp4` (post this one; `final.mp4` is the silent copy). Needs Python 3, Pillow, numpy and ffmpeg.
+3. Look at a few frames before scheduling.
 
 The script writes "For education only. Not financial advice." along the bottom of every frame.
 
 Fonts are bundled in `fonts/` (Anton: SIL OFL; FreeSerif: GPL with font exception; DejaVu Sans: free licence).
+
+## Writing the lines
+- One idea per video, about money discipline or life discipline. Short lines, max 5 words each.
+- 4-6 scenes, 15-20 seconds total. Always end with the `outro` scene.
+- No named investments, no promised returns, no personal advice (Compliance.md still applies).
+- Caption: one plain line plus "Not financial advice." and 3-5 hashtags. No swearing in the caption.
