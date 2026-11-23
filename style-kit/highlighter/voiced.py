@@ -47,7 +47,11 @@ def person(d, x, y, h, pose="arms", c=(10, 10, 10), step=0.0):
     d.polygon([(x - sw, y - h * 0.77), (x + sw, y - h * 0.77), (x + hw, y - h * 0.47), (x - hw, y - h * 0.47)], fill=c)
     lw = h * 0.075; aw = h * 0.055
     sh_l, sh_r = (x - sw * 0.9, y - h * 0.75), (x + sw * 0.9, y - h * 0.75)
-    if pose == "arms":
+    if pose == "wide":  # arms stretched out to the sides, a bit up
+        _limb(d, sh_l, (x - h * 0.30, y - h * 0.86), aw, c); _limb(d, (x - h * 0.30, y - h * 0.86), (x - h * 0.52, y - h * 0.94), aw * 0.9, c)
+        _limb(d, sh_r, (x + h * 0.30, y - h * 0.86), aw, c); _limb(d, (x + h * 0.30, y - h * 0.86), (x + h * 0.52, y - h * 0.94), aw * 0.9, c)
+        _limb(d, (x - hw * .6, hip[1]), (x - h * 0.12, y), lw * 1.15, c); _limb(d, (x + hw * .6, hip[1]), (x + h * 0.12, y), lw * 1.15, c)
+    elif pose == "arms":
         _limb(d, sh_l, (x - h * 0.36, y - h * 1.08), aw, c); _limb(d, sh_r, (x + h * 0.36, y - h * 1.08), aw, c)
         _limb(d, (x - hw * .6, hip[1]), (x - h * 0.16, y), lw, c); _limb(d, (x + hw * .6, hip[1]), (x + h * 0.16, y), lw, c)
     elif pose == "stand":
@@ -72,8 +76,10 @@ def scene_picture(pic, text, dur):
         d = ImageDraw.Draw(img)
         K = (10, 10, 10)
         e = make.ease(t / 0.5)
-        if pic == "arms":
-            person(d, W * S / 2, H * S * 0.86, H * S * 0.30 * (0.94 + 0.06 * e), "arms", K)
+        if pic == "wide":
+            person(d, W * S / 2, H * S * (0.78 if SQUARE else 0.9), H * S * (0.30 if SQUARE else 0.36) * (0.96 + 0.04 * e), "wide", K)
+        elif pic == "arms":
+            person(d, W * S / 2, H * S * (0.76 if SQUARE else 0.86), H * S * (0.24 if SQUARE else 0.30) * (0.94 + 0.06 * e), "arms", K)
         elif pic == "summit":
             d.polygon([(-50, H * S), (W * S * 0.55, H * S * 0.62), (W * S + 50, H * S)], fill=K)
             d.polygon([(W * S * 0.2, H * S), (W * S * 0.8, H * S * 0.74), (W * S + 50, H * S)], fill=(40, 40, 40))
@@ -96,9 +102,27 @@ def scene_picture(pic, text, dur):
             p = make.ease((t - 0.15) / 0.3)
             for li, ln in enumerate(lines if p > 0.02 else []):
                 tw = dr.textlength(ln, font=f)
-                dr.text(((W - tw) / 2, 260 + li * 140 - (1 - p) * 30), ln, font=f, fill=(12, 12, 12))
+                dr.text(((W - tw) / 2, (500 if SQUARE else 260) + li * 140 - (1 - p) * 30), ln, font=f, fill=(12, 12, 12))
         return img
     return draw, dur
+
+
+SQUARE = False   # spec "frame": "square" -> square panel in the middle, black above and below (like Norman's reference clip)
+WHIP = 0.14      # seconds of sideways motion blur at the end of each scene
+
+
+def whip(scene):
+    draw, dur = scene
+    def d2(i, t):
+        img = draw(i, t)
+        k = (t - (dur - WHIP)) / WHIP
+        if k > 0:
+            from PIL import Image as _I
+            f = max(2, int(1 + 22 * k))
+            W, H = img.size
+            img = img.resize((max(8, W // f), H), _I.BILINEAR).resize((W, H), _I.BILINEAR)
+        return img
+    return d2, dur
 
 
 def probe(f):
@@ -137,7 +161,7 @@ def build(spec, cuts):
         if k == "paper":
             nw = sum(len(l.split()) for l in s["lines"])
             pw = s.get("per_word", min(0.32, max(0.12, dur * 0.6 / max(nw, 1))))
-            scenes.append(make.scene_paper(s["lines"], dur, per_word=pw, size=s.get("size", 78)))
+            scenes.append(make.scene_paper(s["lines"], dur, per_word=pw, size=s.get("size", 96 if SQUARE else 78)))
         elif k == "punch":
             scenes.append(make.scene_punch(s["text"], dur))
         elif k == "toggles":
@@ -163,6 +187,7 @@ if __name__ == "__main__":
     os.makedirs(out, exist_ok=True)
     make.OUT = out
     make.DISCLAIMER = spec.get("disclaimer", "")
+    SQUARE = spec.get("frame") == "square"
     SPEED = spec.get("speed", SPEED)
     short = voice == "-"
     if short:  # text + music only: scene lengths from "seconds", outro card at the end
@@ -175,14 +200,16 @@ if __name__ == "__main__":
     else:
         full, cuts = audio(spec, voice, signoff, out)
         make.SCENES[:] = build(spec, cuts)
+    make.SCENES[:] = [whip(x) for x in make.SCENES[:-1]] + make.SCENES[-1:]
     with Pool(min(6, os.cpu_count() or 2)) as p:
         p.map(render_one, range(len(make.SCENES)))
     with open(os.path.join(out, "list.txt"), "w") as fh:
         fh.writelines(f"file 's{i}.mp4'\n" for i in range(len(make.SCENES)))
     silent = os.path.join(out, "silent.mp4")
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", os.path.join(out, "list.txt"), "-c", "copy", silent], check=True)
-    music = os.path.join(os.path.dirname(os.path.abspath(__file__)), "highlighter_bed.mp3")
+    music = os.path.join(os.path.dirname(os.path.abspath(__file__)), spec.get("music_file", "hype_bed.mp3"))
     vol = spec.get("music", 0.16)
+    SQ = "crop=1080:1100:0:410,pad=1080:1920:0:410:black," if SQUARE else ""
     # keep the file under ~9.5 MB so it can go through the GitHub web upload (10 MB limit per upload call)
     vb = int(9.3 * 8192 / (cuts[-1] / SPEED + 0.5) - 170)
     final = os.path.join(out, "final.mp4")
@@ -192,7 +219,7 @@ if __name__ == "__main__":
         vol = spec.get("music", 1.0)
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", silent, "-i", full, "-stream_loop", "-1", "-i", music, "-filter_complex",
                     f"[2:a]volume={vol}[m];[1:a][m]amix=inputs=2:duration=first:normalize=0[a];"
-                    f"[0:v]setpts=PTS/{SPEED}[v];[a]atempo={SPEED}[a2]",
+                    f"[0:v]{SQ}setpts=PTS/{SPEED}[v];[a]atempo={SPEED}[a2]",
                     "-map", "[v]", "-map", "[a2]", "-r", "30", "-c:v", "libx264", "-preset", "medium", "-b:v", f"{vb}k", "-maxrate", f"{int(vb*1.4)}k", "-bufsize", f"{vb*2}k",
                     "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "160k", "-shortest", "-movflags", "+faststart", final], check=True)
     th = os.path.join(out, "thumb.jpg")
