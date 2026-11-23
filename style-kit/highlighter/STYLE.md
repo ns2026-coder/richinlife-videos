@@ -27,3 +27,11 @@ Fonts are bundled in `fonts/` (Anton: SIL OFL; FreeSerif: GPL with font exceptio
 - 4-6 scenes, 15-20 seconds total. Always end with the `outro` scene.
 - No named investments, no promised returns, no personal advice (Compliance.md still applies).
 - Caption: one plain line plus "Not financial advice." and 3-5 hashtags. No swearing in the caption.
+
+## Motivational videos (added 23 Nov 2026)
+Norman wants more motivational videos in this look, with pictures. On motivational days (even dates):
+- **10:00 short:** text + music only, 15-25 s, made with `make.py` like the 18:00 one but clean (no swearing). Motivation theme, e.g. toggles off "Motivation" / on "Discipline".
+- **12:00 long:** `voiced.py`: same look timed to the ElevenLabs voice "Dan - Energetic, Young and UK-based", music bed under it, spoken sign-off added, 61-70 s. Spec scenes need a `say` line each. Example: `examples/M01.json` in the PC project's specs/ (specs/M01.json).
+  `python3 voiced.py specs/M01.json voice.mp3 signoff.mp3 work/M01` -> `work/M01/final.mp4` (kept under ~9.5 MB for the web upload) and `thumb.jpg`.
+- **Pictures:** scene type `picture` with `pic` = `arms` (figure arms raised), `summit` (figure on a peak), `stairs` (figure climbing), `road` (figure on a road), plus bold `text` ("LINE\nLINE"). All drawn in code: no stock photos, no brand logos or slogans (never "Just do it" or other brands' lines).
+- Use 3-5 picture scenes per long video, 1-2 in a short one.
