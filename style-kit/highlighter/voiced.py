@@ -4,6 +4,7 @@ Same look as make.py (grainy paper, yellow marker, punch cards, toggles), timed 
 with the spoken sign-off appended and the music bed underneath, optionally sped up (spec "speed", default 1.0).
 
 usage: python3 voiced.py spec.json voice.mp3 signoff.mp3 out_dir
+       python3 voiced.py spec.json - - out_dir   (SHORT: text + music only; each scene needs "seconds", no "say")
 spec: {"scenes": [{"type": "paper"|"punch"|"toggles"|"clock"|"picture" (pic: arms|summit|stairs|road, text: "LINE\\nLINE"), "say": "...", <make.py fields>}, ...],
        "disclaimer": ""   (optional; "" hides the bottom line for life/motivation videos),
        "music": 0.16      (optional; music volume under the voice)}
@@ -163,8 +164,17 @@ if __name__ == "__main__":
     make.OUT = out
     make.DISCLAIMER = spec.get("disclaimer", "")
     SPEED = spec.get("speed", SPEED)
-    full, cuts = audio(spec, voice, signoff, out)
-    make.SCENES[:] = build(spec, cuts)
+    short = voice == "-"
+    if short:  # text + music only: scene lengths from "seconds", outro card at the end
+        cuts = [0.0]
+        for sc in spec["scenes"]:
+            cuts.append(round(cuts[-1] + sc["seconds"], 2))
+        cuts.append(round(cuts[-1] + spec.get("outro_seconds", 2.6), 2))
+        full = None
+        make.SCENES[:] = build(spec, cuts)[:-1] + [make.scene_outro(cuts[-1] - cuts[-2])]
+    else:
+        full, cuts = audio(spec, voice, signoff, out)
+        make.SCENES[:] = build(spec, cuts)
     with Pool(min(6, os.cpu_count() or 2)) as p:
         p.map(render_one, range(len(make.SCENES)))
     with open(os.path.join(out, "list.txt"), "w") as fh:
@@ -176,6 +186,10 @@ if __name__ == "__main__":
     # keep the file under ~9.5 MB so it can go through the GitHub web upload (10 MB limit per upload call)
     vb = int(9.3 * 8192 / (cuts[-1] / SPEED + 0.5) - 170)
     final = os.path.join(out, "final.mp4")
+    if short:
+        full = os.path.join(out, "silence.wav")
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "anullsrc=r=44100:cl=mono", "-t", str(cuts[-1]), full], check=True)
+        vol = spec.get("music", 1.0)
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", silent, "-i", full, "-stream_loop", "-1", "-i", music, "-filter_complex",
                     f"[2:a]volume={vol}[m];[1:a][m]amix=inputs=2:duration=first:normalize=0[a];"
                     f"[0:v]setpts=PTS/{SPEED}[v];[a]atempo={SPEED}[a2]",
